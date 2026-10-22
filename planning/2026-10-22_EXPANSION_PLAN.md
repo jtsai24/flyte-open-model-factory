@@ -10,8 +10,9 @@ model, and can run without a laptop.
 
 - Flyte 2 provides durable orchestration, fan-out, retries, caching, lineage,
   artifacts, and run inspection.
-- Fireworks provides hosted open-weight inference, managed SFT/LoRA training,
-  and serving of tuned models.
+- Together AI provides the initial hosted open-weight inference API.
+- The managed fine-tuning provider will be selected later based on supported
+  models, artifact ownership, export options, cost, and API quality.
 - EKS becomes the eventual always-on Flyte execution environment.
 - S3 stores datasets, evaluation results, and exported model adapters or weights.
 - AWS Secrets Manager stores provider credentials.
@@ -29,8 +30,8 @@ model, and can run without a laptop.
 ### 2. Add managed fine-tuning
 
 - Prepare separate training and evaluation datasets.
-- Select a Fireworks-supported base model.
-- Submit an SFT or LoRA job through the Fireworks training API.
+- Select a provider-supported base model.
+- Submit an SFT or LoRA job through the selected provider's training API.
 - Treat the provider training-job identifier as a durable Flyte artifact.
 - Poll or await training completion without keeping a laptop process alive.
 - Evaluate the tuned model against the original baseline.
@@ -65,10 +66,11 @@ model, and can run without a laptop.
 
 Built an AWS-hosted open-model factory using Flyte 2 on EKS. The workflow
 evaluates open-weight models concurrently, selects candidates using automated
-metrics, launches managed LoRA fine-tuning through Fireworks, compares tuned
-models against their baselines, and promotes successful adapters for deployment.
-Datasets and exported model artifacts are versioned in S3, credentials are
-managed through AWS Secrets Manager, and the infrastructure is reproducible.
+metrics, launches managed LoRA fine-tuning through a hosted provider, compares
+tuned models against their baselines, and promotes successful adapters for
+deployment. Datasets and exported model artifacts are versioned in S3,
+credentials are managed through AWS Secrets Manager, and the infrastructure is
+reproducible.
 
 ## Guardrails
 

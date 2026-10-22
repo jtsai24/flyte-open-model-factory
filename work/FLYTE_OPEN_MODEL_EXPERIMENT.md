@@ -1,66 +1,161 @@
-# Flyte 2 + hosted open-model experiment
+# Flyte 2 + Together AI experiment
 
-This is the smallest useful experiment for tonight: Flyte runs three prompts in
-parallel against either Fireworks AI or Together AI and writes the collected
-responses to `work/results/open_model_experiment.json`.
+This project incrementally proves a local Flyte 2 workflow for comparing hosted
+open-weight models through Together AI.
 
-## 1. Create the local environment
+## Safety rules
 
-Use Python 3.12 if available. Docker must be running.
+- Never commit `.env` or an API key.
+- Never copy `.env` into an image.
+- Never pass `MODEL_API_KEY` as a task input, build argument, or ordinary Flyte
+  run environment value.
+- Store the key in Flyte and inject it only into model-calling task containers.
+- Get explicit approval before builds, Flyte runs, provider calls, dependency
+  installations, or other potentially lengthy or cost-bearing operations.
 
-```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip install --upgrade pip flyte
-flyte start devbox
-flyte create config --devbox
-```
+## 1. Direct API smoke test
 
-If `flyte-devbox` is already running, do not start a second one. The project-local
-`.flyte/config.yaml` points Flyte at the devbox and its local image registry.
-
-## 2. Configure one provider
-
-Fireworks:
+For direct local development, load the ignored `.env` into the current shell:
 
 ```bash
-export MODEL_PROVIDER=fireworks
-export MODEL_BASE_URL=https://api.fireworks.ai/inference/v1
-export MODEL_NAME=<a Fireworks model id>
-export MODEL_API_KEY=<your Fireworks API key>
+set -a
+source .env
+set +a
 ```
 
-Together:
+Then run:
 
 ```bash
-export MODEL_PROVIDER=together
-export MODEL_BASE_URL=https://api.together.xyz/v1
-export MODEL_NAME=<a Together model id>
-export MODEL_API_KEY=<your Together API key>
+.venv/bin/python work/together_api_smoke_test.py
 ```
 
-Do not put the API key in this file or commit it.
+This path is outside Flyte and reads `MODEL_API_KEY` from the local process
+environment.
 
-## 3. Run the experiment
+## 2. Verify the local Flyte devbox
+
+Check its state:
 
 ```bash
-source .venv/bin/activate
-python work/flyte_open_model_experiment.py
+.venv/bin/flyte get devbox
 ```
 
-Open the Flyte URL printed by the script. The local result is written to
-`work/results/open_model_experiment.json` after the run completes.
+Start or resume it only when needed:
 
-The launcher forwards the four `MODEL_*` variables to the Flyte task at run
-time. They are not baked into the task image. For shared or production clusters,
-replace the API-key environment variable with a Flyte-managed secret.
+```bash
+.venv/bin/flyte start devbox
+```
 
-## What this demonstrates
+The local UI is available at <http://localhost:30080/v2/projects> while the
+devbox is running.
 
-- A Flyte 2 task calling an external OpenAI-compatible model API
-- Parallel calls using ordinary Python `asyncio.gather`
-- Per-prompt latency, usage, and error capture
-- A durable Flyte run that can be inspected in the UI
+## 3. Store the Together key in Flyte
 
-It deliberately does not include fine-tuning, web scraping, S3, or a judge model.
-Those are the next layers after this thin vertical slice works.
+Create the secret interactively so the value is not placed in shell history:
+
+```bash
+.venv/bin/flyte \
+  --config .flyte/config.yaml \
+  create secret together-api-key \
+  --project flytesnacks \
+  --domain development
+```
+
+Verify its existence without displaying its value:
+
+```bash
+.venv/bin/flyte \
+  --config .flyte/config.yaml \
+  get secret together-api-key \
+  --project flytesnacks \
+  --domain development
+```
+
+In Flyte 2.12.1, the task environment requests the secret:
+
+```python
+model_env = flyte.TaskEnvironment(
+    name="together_model_call",
+    image=image,
+    secrets=flyte.Secret(
+        "together-api-key",
+        as_env_var="MODEL_API_KEY",
+    ),
+)
+```
+
+The image contains code and dependencies. Flyte injects the key into the running
+container as `MODEL_API_KEY`; the key is not part of the image.
+
+## 4. Verified Flyte steps
+
+Minimal Flyte task:
+
+```bash
+.venv/bin/flyte build work work/flyte_smoke_test.py env
+.venv/bin/python work/flyte_smoke_test.py
+```
+
+One Together call from Flyte:
+
+```bash
+.venv/bin/flyte build work work/flyte_together_smoke_test.py env
+.venv/bin/python work/flyte_together_smoke_test.py
+```
+
+The parent/child pattern was verified with two child calls:
+
+```bash
+.venv/bin/flyte build \
+  work \
+  work/flyte_two_model_comparison.py \
+  comparison_env
+
+.venv/bin/python work/flyte_two_model_comparison.py
+```
+
+The comparison creates one parent orchestration action and two concurrently
+executing child model-call actions. Inside the parent, `call_model` is a Flyte
+task object created by `@model_env.task`; its `.aio()` method submits an
+asynchronous child action.
+
+## 5. Final local milestone
+
+Build, run, and verify the prepared expansion of the parent/child pattern:
+
+```text
+2 models × 3 prompts = 6 child model calls
+```
+
+The six-call workflow has its own entry point so the verified two-child step
+remains unchanged:
+
+```bash
+.venv/bin/flyte build \
+  work \
+  work/flyte_six_call_experiment.py \
+  experiment_env
+
+.venv/bin/python work/flyte_six_call_experiment.py
+```
+
+The parent should:
+
+- collect response, latency, usage, instruction checks, and errors;
+- generate a readable comparison in the Flyte Reports tab; and
+- write the full result to `work/results/open_model_experiment.json` from the
+  local launcher after the run finishes.
+
+Use the run graph for concurrency and lineage, Summary for raw inputs and
+outputs, Logs for debugging, and Reports for the human-readable experiment
+comparison. The Metrics tab is infrastructure-oriented and is not required for
+the local experiment.
+
+## Legacy prototype
+
+`work/flyte_open_model_experiment.py` is an earlier prototype. It runs multiple
+HTTP calls inside one Flyte task, forwards the API key as an ordinary run
+environment value, and uses an obsolete result accessor. Do not use it as the
+basis for the final workflow.
+
+Public decisions and implementation records are linked from `README.md`.
