@@ -1,0 +1,10 @@
+.DS_Store
+.env
+.env.*
+.venv/
+.flyte/
+__pycache__/
+*.py[cod]
+
+# Generated experiment outputs may contain model responses or sensitive data.
+work/results/
