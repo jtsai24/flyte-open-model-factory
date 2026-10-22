@@ -16,7 +16,7 @@ open-weight model hosted by Together AI.
 
 ## Execution plan
 
-1. Choose Fireworks or Together AI and identify a valid hosted model ID.
+1. Choose a hosted provider (Together AI was selected) and identify a valid hosted model ID.
 2. Configure the provider credential locally without committing it.
 3. Make one direct API call outside Flyte.
 4. Confirm the response, latency, token usage, and error handling.
@@ -43,14 +43,21 @@ Completed:
 - Ran a parent task with two concurrent model-call child tasks and inspected all
   three actions in the Flyte UI.
 
-Remaining for tonight:
-
-- Build and verify the prepared two-model, three-prompt parent/child workflow.
-- Capture response, latency, token usage, instruction checks, and errors for all
+- Built and ran the report-enabled two-model, three-prompt parent/child workflow
+  (run `rhlhkckxv6fcsn4q2984`, issue #8): one parent and six concurrent child
+  actions, 10.24 seconds total, no model-call errors.
+- Captured response, latency, token usage, instruction checks, and errors for all
   six calls.
-- Generate a readable parent comparison in the Flyte Reports tab.
-- Write the aggregated result to `work/results/open_model_experiment.json`.
-- Inspect and document the successful six-call run.
+- Rendered Overview, Responses, and Call details tabs in the Flyte Reports UI.
+- Wrote the aggregated result to `work/results/open_model_experiment.json`.
+- Documented the run, comparison table, and screenshots in issue #8.
+
+Result: all success criteria are met. Llama 3.3 70B averaged 3.061s and 471
+tokens; GPT-OSS 120B averaged 3.136s and 785 tokens. Both passed 3/3
+deterministic instruction checks, which measure instruction compliance, not
+quality.
+
+Remaining: none for the local milestone. Next is stage 1 of the expansion plan.
 
 The Flyte Metrics tab is not a requirement for tonight. It generally depends on
 infrastructure telemetry integration. Experiment measurements belong in the
@@ -72,5 +79,5 @@ an execution approval.
 ## Public records
 
 GitHub issues are the public record for decisions and completed implementation
-steps. See the issue index in `README.md`. Issue #4 tracks the final six-call
-experiment.
+steps. See the issue index in `README.md`. Issue #4 tracks the
+six-call experiment and issue #8 records its verified run.

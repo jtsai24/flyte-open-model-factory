@@ -22,6 +22,8 @@ model, and can run without a laptop.
 
 ### 1. Establish a reliable baseline
 
+The local six-call experiment (issue #8) is complete and is the starting point.
+
 - Turn the initial prompts into a small versioned evaluation dataset.
 - Evaluate multiple hosted open-weight models in parallel.
 - Record model identifiers, prompts, responses, latency, usage, errors, and cost.
@@ -47,7 +49,7 @@ model, and can run without a laptop.
 ### 4. Move Flyte off the laptop
 
 - Deploy Flyte 2 to a small EKS environment.
-- Start with one modest worker pool because Fireworks supplies the GPU compute.
+- Start with one modest worker pool because the hosted fine-tuning provider supplies the GPU compute.
 - Use remote image builds and a private container registry.
 - Secure the Flyte UI and API rather than exposing cluster services directly.
 - Add persistent storage, backups, monitoring, budgets, and cost alerts.

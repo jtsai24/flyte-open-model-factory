@@ -119,9 +119,10 @@ executing child model-call actions. Inside the parent, `call_model` is a Flyte
 task object created by `@model_env.task`; its `.aio()` method submits an
 asynchronous child action.
 
-## 5. Final local milestone
+## 5. Final local milestone (completed)
 
-Build, run, and verify the prepared expansion of the parent/child pattern:
+The report-enabled expansion of the parent/child pattern was built, run, and
+verified (run `rhlhkckxv6fcsn4q2984`, issue #8):
 
 ```text
 2 models × 3 prompts = 6 child model calls
@@ -139,11 +140,11 @@ remains unchanged:
 .venv/bin/python work/flyte_six_call_experiment.py
 ```
 
-The parent should:
+The parent:
 
-- collect response, latency, usage, instruction checks, and errors;
-- generate a readable comparison in the Flyte Reports tab; and
-- write the full result to `work/results/open_model_experiment.json` from the
+- collects response, latency, usage, instruction checks, and errors;
+- generates a readable comparison in the Flyte Reports tab; and
+- writes the full result to `work/results/open_model_experiment.json` from the
   local launcher after the run finishes.
 
 Use the run graph for concurrency and lineage, Summary for raw inputs and
